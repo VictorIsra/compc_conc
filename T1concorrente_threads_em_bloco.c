@@ -13,7 +13,6 @@ typedef struct caracter{
 	
 }Caracter;
 
-
 long buffleng;//tamanho em bytes do arquivo ( pra calcular o tamanho do buffer )
 int nthreads;
 char *buffer;//vetor que conterá o buffer a ser lido
@@ -69,9 +68,8 @@ char* gera_buffer(FILE* arq_entrada ){
 //conta os caracteres, comparando-os com a tabela asc gerada por ''preenche_asc()''
 void* conta_caracteres(void* id){
 	
-	
 	long posicao = 0, comeco, fim, bloco = buffleng/nthreads; int tid = *(int*) id;
-
+	
 	comeco = tid*bloco;
 
 	if(tid < nthreads - 1)
@@ -96,7 +94,6 @@ void escreve_saida(FILE* arq_saida){
 	for( i = 0; i < QT_SIMBOLOS;i++){
 		if(lista_asc[i].ocorrencias != 0)
 			fprintf(arq_saida, " %c,  		  %d\n", lista_asc[i].asc_code, lista_asc[i].ocorrencias);
-			
 	}
 
 	fclose(arq_saida);
@@ -141,14 +138,13 @@ int main(int argc, char* argv[]){
 		 pthread_join(thread[t], NULL);
   		
 	GET_TIME(fim);
-	
 	tempo = fim - inicio;
 
     	fclose(arq_entrada);
 	escreve_saida(arq_saida);
 	
 	printf("TEMPO EM MINUTOS COM %d threads: %.8f minutos.\n", nthreads,tempo/60);
-		
+
 	pthread_mutex_destroy(&mutex);
 	pthread_exit(NULL);
 }
