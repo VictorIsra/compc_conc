@@ -13,15 +13,13 @@ typedef struct caracter{
 	
 }Caracter;
 
-//long posicao_global = 0;//variavel acessada por várias threads
+
 long buffleng;//tamanho em bytes do arquivo ( pra calcular o tamanho do buffer )
 int nthreads;
 char *buffer;//vetor que conterá o buffer a ser lido
 Caracter *lista_asc;//vetor que conterá os simbolos da tabela ASC
 
 pthread_mutex_t mutex;
-//gera um vetor com os valores da tabela asc ( ideal: se existisse dicionário )
-
 
 int hashCode(int key) {
    
@@ -51,8 +49,7 @@ Caracter* preenche_asc(){
 	for(i = 0; i < QT_SIMBOLOS; i++){
 		
 		vetor[i].asc_code = i + 33; 
-		vetor[i].ocorrencias = 0;
-		
+		vetor[i].ocorrencias = 0;	
 	}
 	
 	return vetor; 
@@ -70,29 +67,23 @@ char* gera_buffer(FILE* arq_entrada ){
 }
 
 //conta os caracteres, comparando-os com a tabela asc gerada por ''preenche_asc()''
-void* conta_caracteres(void* args){
+void* conta_caracteres(void* id){
 	
-	//FILE * arq = fopen("saida3.txt","w");
-	static long posicao_local = 0; int tid = *(int*) args;
-	long comeco, fim;
-	long bloco = buffleng;printf("bloco d tamanho: %ld\n", bloco);
-	comeco = tid*bloco; fim = comeco + bloco;
-	//priantf("entrou sou a thread: %d fim %ld comeco:%ld\n",tid+1,fim,comeco);
-	//printf("22entrou sou a thread: %d\n",tid+1);
-	if(tid = nthreads - 1)
-		fim = buffleng;
-	pthread_mutex_lock(&mutex);
-	//printf("3entrou sou a thread: %d\n",tid+1);
-	for(posicao_local = comeco; posicao_local < fim; posicao_local++){
-		
-		
-		//pthread_mutex_lock(&mutex);
-		search(buffer[posicao_local]);
-		//pthread_mutex_unlock(&mutex);
 	
-		
+	long posicao = 0, comeco, fim, bloco = buffleng/nthreads; int tid = *(int*) id;
 
-	}	
+	comeco = tid*bloco;
+
+	if(tid < nthreads - 1)
+		fim = comeco + bloco;
+	else
+		fim = buffleng;
+
+	pthread_mutex_lock(&mutex);
+	
+	for(posicao = comeco; posicao < fim; posicao++)
+		search(buffer[posicao]);
+
 	pthread_mutex_unlock(&mutex);
 	pthread_exit(NULL);
 }
@@ -109,7 +100,6 @@ void escreve_saida(FILE* arq_saida){
 	}
 
 	fclose(arq_saida);
-
 }
 
 int main(int argc, char* argv[]){
@@ -126,13 +116,14 @@ int main(int argc, char* argv[]){
 	buffer = gera_buffer(arq_entrada);
 	lista_asc = preenche_asc();
 	
+	printf("CARREGANDO BUFFER...\n");
 	fread(buffer, buffleng, 1, arq_entrada);
 	
 	printf("CONTANDO CARACTERES DO TEXTO...\n");
 	
-	int t, nthreads = atoi(argv[3]); double inicio, fim , tempo;
-	printf("nthreads: %d\n", nthreads);	
+	nthreads = atoi(argv[3]);
 	pthread_t thread[nthreads];
+	int t; double inicio, fim , tempo;
 	int *tid;
 	
 	pthread_mutex_init(&mutex, NULL);
@@ -140,17 +131,14 @@ int main(int argc, char* argv[]){
 	GET_TIME(inicio);
 	
 	for( t=0; t<nthreads; t++){	
-		
-		tid = (int*) malloc(sizeof(int));
+		printf("for cri thread nthreads: %d\n", nthreads);
+		tid = (int*) malloc(sizeof(int));if(tid==NULL) { printf("--ERRO: malloc()\n"); exit(-1); }
 		*tid = t;		
 		pthread_create(&thread[t], NULL, conta_caracteres,(void*) tid);
-	
 	}
 	
-	for (t = 0; t < nthreads; t++) {
-   		
+	for (t = 0; t < nthreads; t++) 
 		 pthread_join(thread[t], NULL);
-  	}
   		
 	GET_TIME(fim);
 	
